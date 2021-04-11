@@ -7,7 +7,7 @@
 
 	MIT
 	See license.txt for more information
-	
+
 ]]--
 
 -- for lazy programmers
@@ -36,7 +36,7 @@ minetest.tValidCarts = tValidCarts
 
 function minecart.register_cart_names(cart_name_stopped, cart_name_running)
 	tValidCarts[cart_name_stopped] = cart_name_running
-	
+
 	if minetest.registered_nodes[cart_name_stopped] then
 		lValidCartNodes[#lValidCartNodes+1] = cart_name_stopped
 	end
@@ -70,6 +70,9 @@ function minecart.get_node_lvm(pos)
 end
 
 function minecart.stopped(vel, tolerance)
+	if not vel then
+		return true
+	end
 	tolerance = tolerance or 0.05
 	return math.abs(vel.x) < tolerance and math.abs(vel.z) < tolerance
 end
@@ -107,24 +110,24 @@ local function get_cart_object(pos, radius)
 end
 
 -- check if cart can be pushed
-function minecart.check_cart_for_pushing(pos, param2, radius)	
+function minecart.check_cart_for_pushing(pos, param2, radius)
 	local pos2 = param2 and vector.add(pos, param2_to_dir[param2]) or pos
-	
+
 	if minetest.find_node_near(pos2, radius or 0.5, lValidCartNodes, true) then
 		return true
 	end
-	
+
 	return get_cart_object(pos2, radius) ~= nil
 end
 
 -- check if cargo can be loaded
-function minecart.check_cart_for_loading(pos, param2, radius)	
+function minecart.check_cart_for_loading(pos, param2, radius)
 	local pos2 = param2 and vector.add(pos, param2_to_dir[param2]) or pos
-	
+
 	if minetest.find_node_near(pos2, radius or 0.5, lValidCartNodes, true) then
 		return true
 	end
-	
+
 	for _, object in pairs(minetest.get_objects_inside_radius(pos2, radius or 0.5)) do
 		if object:get_entity_name() == "minecart:cart" then
 			local vel = object:get_velocity()
@@ -133,7 +136,7 @@ function minecart.check_cart_for_loading(pos, param2, radius)
 			end
 		end
 	end
-	
+
 	return false
 end
 
@@ -169,7 +172,7 @@ function minecart.take_items(pos, param2, num)
 	local def = RegisteredInventories[node.name]
 	local owner = M(pos):get_string("owner")
 	local inv = minetest.get_inventory({type="node", pos=npos})
-	
+
 	if def and inv and def.take_listname and (not def.allow_take or def.allow_take(npos, nil, owner)) then
 		return minecart.inv_take_items(inv, def.take_listname, num)
 	elseif def and def.take_item then
@@ -187,7 +190,7 @@ function minecart.put_items(pos, param2, stack)
 	local def = RegisteredInventories[node.name]
 	local owner = M(pos):get_string("owner")
 	local inv = minetest.get_inventory({type="node", pos=npos})
-	
+
 	if def and inv and def.put_listname and (not def.allow_put or def.allow_put(npos, stack, owner)) then
 		local leftover = inv:add_item(def.put_listname, stack)
 		if leftover:get_count() > 0 then
@@ -219,7 +222,7 @@ function minecart.untake_items(pos, param2, stack)
 	end
 	local def = RegisteredInventories[node.name]
 	local inv = minetest.get_inventory({type="node", pos=npos})
-	
+
 	if def and inv and def.put_listname then
 		return inv:add_item(def.put_listname, stack)
 	elseif def and def.untake_item then
@@ -234,7 +237,7 @@ end
 
 function minecart.punch_cart(pos, param2, radius, dir)
 	local pos2 = param2 and vector.add(pos, param2_to_dir[param2]) or pos
-	
+
 	local pos3 = minetest.find_node_near(pos2, radius or 0.5, lValidCartNodes, true)
 	if pos3 then
 		local node = minetest.get_node(pos3)
@@ -242,7 +245,7 @@ function minecart.punch_cart(pos, param2, radius, dir)
 		minecart.node_on_punch(pos3, node, nil, nil, tValidCarts[node.name], dir)
 		return true
 	end
-	
+
 	local obj = get_cart_object(pos2, radius)
 	if obj then
 		obj:punch(obj, 1.0, {
@@ -250,7 +253,7 @@ function minecart.punch_cart(pos, param2, radius, dir)
 			damage_groups = {fleshy = 1},
 		}, dir)
 	end
-end	
+end
 
 -- Register inventory node for hopper access
 -- (for examples, see below)
@@ -311,14 +314,14 @@ minecart.register_inventory({"minecart:hopper"}, {
 		allow_inventory_put = function(pos, stack, player_name)
 			local owner = M(pos):get_string("owner")
 			return owner == player_name
-		end, 
+		end,
 		listname = "main",
 	},
 	take = {
 		allow_inventory_take = function(pos, stack, player_name)
 			local owner = M(pos):get_string("owner")
 			return owner == player_name
-		end, 
+		end,
 		listname = "main",
 	},
 })
