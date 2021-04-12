@@ -62,11 +62,13 @@ function minecart.get_node_lvm(pos)
 	local param2_data = vm:get_param2_data()
 	local area = VoxelArea:new({MinEdge = MinEdge, MaxEdge = MaxEdge})
 	local idx = area:indexp(pos)
-	node = {
-		name = minetest.get_name_from_content_id(data[idx]),
-		param2 = param2_data[idx]
-	}
-	return node
+	if data[idx] and param2_data[idx] then
+		return {
+			name = minetest.get_name_from_content_id(data[idx]),
+			param2 = param2_data[idx]
+		}
+	end
+	return {name="ignore", param2=0}
 end
 
 function minecart.stopped(vel, tolerance)
@@ -100,7 +102,8 @@ end
 
 local function get_cart_object(pos, radius)
 	for _, object in pairs(minetest.get_objects_inside_radius(pos, radius or 0.5)) do
-		if tValidCartEntities[object:get_entity_name()] then
+        	local entity = object:get_luaentity()
+		if entity and entity.name and tValidCartEntities[entity.name] then
 			local vel = object:get_velocity()
 			if vector.equals(vel, {x=0, y=0, z=0}) then  -- still standing?
 				return object
@@ -129,10 +132,13 @@ function minecart.check_cart_for_loading(pos, param2, radius)
 	end
 
 	for _, object in pairs(minetest.get_objects_inside_radius(pos2, radius or 0.5)) do
-		if object:get_entity_name() == "minecart:cart" then
-			local vel = object:get_velocity()
-			if vector.equals(vel, {x=0, y=0, z=0}) then  -- still standing?
-				return true
+		if object.get_luaentity then
+			local entity = object:get_luaentity()
+			if entity and entity.name == "minecart:cart" then
+				local vel = object:get_velocity()
+				if vector.equals(vel, {x=0, y=0, z=0}) then  -- still standing?
+					return true
+				end
 			end
 		end
 	end
